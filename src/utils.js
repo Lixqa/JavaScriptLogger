@@ -58,7 +58,6 @@ module.exports = {
             files.forEach(file => {
                 if(!file.includes("latest")) {
                     if(file.includes(module.exports.getDateOfYesterday())) {
-                        console.log("return " + file)
                         response = file;
                     }
                 }
@@ -79,8 +78,6 @@ module.exports = {
     calculateLongestLine: function(string) {
         let lines = string.split("\n")
             .filter(line => line != "");
-    
-        console.log(lines);
     
         return Math.max(...(lines.map(line => line.length)));
     }
