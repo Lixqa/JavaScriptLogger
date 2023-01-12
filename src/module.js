@@ -1,15 +1,35 @@
+const utl = require("./utils.js");
+const fs = require("fs");
+const chalk = require("chalk");
+
+let standarts = {};
+
 function simpleLog(string) {
     console.log(string);
 }
 
-function log(message = "No Message", name = null, showTime = false, innerSpace = false, outerSpace = false, baseColor = null, borderChar = "-", borderCharLength = 10) {
+function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _borderChar, _borderCharLength, _filesPath) {
+    let message = _message || standarts.message || "No Message";
+    let name = _name || standarts.name || null;
+    let showTime = _showTime || standarts.showTime || false;
+    let innerSpace = _innerSpace || standarts.innerSpace || false;
+    let outerSpace = _outerSpace || standarts.outerSpace || standarts.message || false;
+    let baseColor = _baseColor || standarts.baseColor || null;
+    let borderChar = _borderChar || standarts.borderChar || "-";
+    let borderCharLength = _borderCharLength || standarts.borderCharLength || 10;
+    let filesPath = _filesPath || standarts.filesPath || null;
+
+    let longestContentStr = message.replace(utl.ansiRegex(), "");
+    if(showTime) longestContentStr += "\nTime: " + utl.getTime();
+
+    let nameLength = (name != null) ? (4 + name?.length || 0) : (name?.length || 0);
+    if(borderCharLength == -1) borderCharLength = ((utl.calculateLongestLine(longestContentStr)-(nameLength || 0))/2);
+    if(borderCharLength <= 0) borderCharLength = 1;
+    borderCharLength = Math.ceil(borderCharLength);
+
     let output = "";
-    let prefix = (name != null) ? borderChar.repeat(borderCharLength) + "| " + name + " |" + borderChar.repeat(borderCharLength) : borderChar.repeat((borderCharLength*2)+4);
-    let date = new Date();
-    let time =
-    (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) + ":" +
-    (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()) + ":" +
-    (date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds());
+    let prefix = (name != null) ? borderChar.repeat(borderCharLength) + "| " + name + " |" + borderChar.repeat(borderCharLength) : borderChar.repeat((borderCharLength*2));
+    let time = utl.getTime();
 
     let suffix = "";
 
@@ -29,6 +49,31 @@ function log(message = "No Message", name = null, showTime = false, innerSpace =
     output += suffix;
     if(outerSpace) output += "\n";
 
+    /*########### FILE SYSTEM ###########*/
+
+    if(filesPath != null) {
+        let dir = filesPath;
+        let latest = dir + "/latest.log";
+        if(!fs.existsSync(dir)) fs.mkdirSync(dir, 0744);
+        if(!fs.existsSync(latest)) fs.writeFileSync(latest, "");
+
+        let latestCreated = utl.getDateOfTimestamp(fs.statSync(latest).birthtimeMs);
+
+        fs.appendFileSync(latest, output.replace(utl.ansiRegex(), "") + "\n");
+
+        if(!utl.getLastLogFile(dir)?.includes(utl.getDateOfYesterday()) && latestCreated != utl.getDateOfToday()) {
+            /*logByOptions({                                    //muss in einen loop am besten diese ganze checker sonst triggert er sich immer selber
+                message: "Creating new log file...",
+                name: "LOGGER",
+                filesPath: "logs",
+                outerSpace: true
+            });*/
+            fs.renameSync(latest, dir + "/" + utl.getDateOfYesterday() + ".log");
+        }
+    }
+
+    /*###################################*/
+
     if(baseColor) {
         console.log(baseColor(output));
     } else {
@@ -36,38 +81,50 @@ function log(message = "No Message", name = null, showTime = false, innerSpace =
     }
 }
 
-function groupedLog(messagesArray, name = null, showTime = false, innerSpace = false, outerSpace = false, baseColor = null, borderChar = "-", borderCharLength = 10) {
+function groupedLog(messagesArray, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
     if(messagesArray.length < 1) return;
     let output = "";
-    for (let i = 0; i < messagesArray.length; i++) {
-        let message = messagesArray[i];
+    let i = 0;
+    messagesArray.forEach(message => {
         output += message;
         if(i < messagesArray.length-1) output += "\n";
-    }
-    log(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength);
+        i++;
+    })
+    log(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
 }
 
 function logByOptions(options) {
     let message = options.message;
-    let name = options.name || null;
-    let showTime = options.showTime || false;
-    let innerSpace = options.innerSpace || false;
-    let outerSpace = options.outerSpace || false;
-    let baseColor = options.baseColor || null;
-    let borderChar = options.borderChar || "-";
-    let borderCharLength = options.borderCharLength || 10;
+    let name = options.name;
+    let showTime = options.showTime;
+    let innerSpace = options.innerSpace;
+    let outerSpace = options.outerSpace;
+    let baseColor = options.baseColor;
+    let borderChar = options.borderChar;
+    let borderCharLength = options.borderCharLength;
+    let filesPath = options.filesPath;
 
     if(!Array.isArray(message)) {
-        log(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength);
+        log(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
     } else {
-        groupedLog(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength);
+        groupedLog(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
     }
 
+}
+
+function setStandards(obj){
+    standarts = obj;
 }
 
 module.exports = {
     simpleLog: simpleLog,
     log: log,
     groupedLog: groupedLog,
-    logByOptions: logByOptions
+    logByOptions: logByOptions,
+    setStandards: setStandards
 }
+
+setStandards({
+    showTime: true,
+    borderChar: "+"
+});
