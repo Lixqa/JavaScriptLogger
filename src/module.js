@@ -19,8 +19,10 @@ function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     let borderCharLength = _borderCharLength || standarts.borderCharLength || 10;
     let filesPath = _filesPath || standarts.filesPath || null;
 
+    let time = utl.getTime();
+
     let longestContentStr = message.replace(utl.ansiRegex(), "");
-    if(showTime) longestContentStr += "\nTime: " + utl.getTime();
+    if(showTime) longestContentStr += "\nTime: " + time;
 
     let nameLength = (name != null) ? (4 + name?.length || 0) : (name?.length || 0);
     if(borderCharLength == -1) borderCharLength = ((utl.calculateLongestLine(longestContentStr)-(nameLength || 0))/2);
@@ -29,7 +31,6 @@ function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
 
     let output = "";
     let prefix = (name != null) ? borderChar.repeat(borderCharLength) + "| " + name + " |" + borderChar.repeat(borderCharLength) : borderChar.repeat((borderCharLength*2));
-    let time = utl.getTime();
 
     let suffix = "";
 
@@ -81,6 +82,20 @@ function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     }
 }
 
+function miniLog(message = "No message", showTime = false, separator = "=", baseColor = null) {
+    let output = "";
+    let time = utl.getTime();
+
+    if(showTime) output = "" + time + " " + separator + " ";
+    output += message;
+
+    if(baseColor) {
+        console.log(baseColor(output));
+    } else {
+        console.log(output);
+    }
+}
+
 function groupedLog(messagesArray, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
     if(messagesArray.length < 1) return;
     let output = "";
@@ -123,8 +138,3 @@ module.exports = {
     logByOptions: logByOptions,
     setStandards: setStandards
 }
-
-setStandards({
-    showTime: true,
-    borderChar: "+"
-});
