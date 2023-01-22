@@ -96,13 +96,14 @@ function miniLog(message = "No message", showTime = false, separator = "=", base
     }
 }
 
-function groupedLog(messagesArray, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
+function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = false, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
     if(messagesArray.length < 1) return;
     let output = "";
     let i = 0;
     messagesArray.forEach(message => {
         output += message;
         if(i < messagesArray.length-1) output += "\n";
+        if(i < messagesArray.length-1 && betweenSpace) output += "\n";
         i++;
     })
     log(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
@@ -113,6 +114,7 @@ function logByOptions(options) {
     let name = options.name;
     let showTime = options.showTime;
     let innerSpace = options.innerSpace;
+    let betweenSpace = options.betweenSpace; //only for groupedLog
     let outerSpace = options.outerSpace;
     let baseColor = options.baseColor;
     let borderChar = options.borderChar;
@@ -122,7 +124,7 @@ function logByOptions(options) {
     if(!Array.isArray(message)) {
         log(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
     } else {
-        groupedLog(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
     }
 
 }
@@ -136,5 +138,6 @@ module.exports = {
     log: log,
     groupedLog: groupedLog,
     logByOptions: logByOptions,
-    setStandards: setStandards
+    setStandards: setStandards,
+    miniLog: miniLog
 }
