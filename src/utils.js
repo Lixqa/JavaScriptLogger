@@ -80,5 +80,11 @@ module.exports = {
             .filter(line => line != "");
     
         return Math.max(...(lines.map(line => line.length)));
+    },
+    calculatePercantage(val, max) {
+        return (100 * val)/max;
+    },
+    divideLargerBySmaller(a, b) {
+        return (Math.max(a, b) / Math.min(a, b));
     }
 }

@@ -1,6 +1,8 @@
 const utl = require("./utils.js");
 const fs = require("fs");
 const chalk = require("chalk");
+const State = require("./State.class.js");
+const Progress = require("./Progress.class.js");
 
 let standarts = {};
 
@@ -139,5 +141,7 @@ module.exports = {
     groupedLog: groupedLog,
     logByOptions: logByOptions,
     setStandards: setStandards,
-    miniLog: miniLog
+    miniLog: miniLog,
+    State: State,
+    Progress: Progress
 }
