@@ -81,7 +81,7 @@ module.exports = {
     
         return Math.max(...(lines.map(line => line.length)));
     },
-    calculatePercantage(val, max) {
+    calculatePercentage(val, max) {
         return (100 * val)/max;
     },
     divideLargerBySmaller(a, b) {
