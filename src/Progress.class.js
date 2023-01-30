@@ -49,7 +49,7 @@ module.exports = class State {
     }
 
     update(objectName, objectPercentage) {
-        this.objects[this.objects.findIndex(obj => obj.name == objectName)].percentage = objectPercentage;
+        if(this.objects[this.objects.findIndex(obj => obj.name == objectName)]) this.objects[this.objects.findIndex(obj => obj.name == objectName)].percentage = objectPercentage
     }
 
     stop() {

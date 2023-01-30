@@ -41,7 +41,7 @@ module.exports = class State {
     }
 
     update(objectName, objectState) {
-        this.objects[this.objects.findIndex(obj => obj.name == objectName)].state = objectState;
+        if(this.objects[this.objects.findIndex(obj => obj.name == objectName)]) this.objects[this.objects.findIndex(obj => obj.name == objectName)].state = objectState;
     }
 
     stop() {
