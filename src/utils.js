@@ -86,5 +86,13 @@ module.exports = {
     },
     divideLargerBySmaller(a, b) {
         return (Math.max(a, b) / Math.min(a, b));
+    },
+    clearLines(n) {
+        for (let i = 0; i < n; i++) {
+            const y = i === 0 ? null : -1;
+            process.stdout.moveCursor(0, y);
+            process.stdout.clearLine(1);
+        }
+        process.stdout.cursorTo(0)
     }
 }

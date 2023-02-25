@@ -3,23 +3,82 @@ const fs = require("fs");
 const chalk = require("chalk");
 const State = require("./State.class.js");
 const Progress = require("./Progress.class.js");
+const { type } = require("os");
 
-let standarts = {};
+let standards = {};
 
+/**
+ * Simple log.
+ * @param {String} string - Log string
+ */
 function simpleLog(string) {
     console.log(string);
 }
 
-function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _borderChar, _borderCharLength, _filesPath) {
-    let message = _message || standarts.message || "No Message";
-    let name = _name || standarts.name || null;
-    let showTime = _showTime || standarts.showTime || false;
-    let innerSpace = _innerSpace || standarts.innerSpace || false;
-    let outerSpace = _outerSpace || standarts.outerSpace || standarts.message || false;
-    let baseColor = _baseColor || standarts.baseColor || null;
-    let borderChar = _borderChar || standarts.borderChar || "-";
-    let borderCharLength = _borderCharLength || standarts.borderCharLength || 10;
-    let filesPath = _filesPath || standarts.filesPath || null;
+/**
+ * Log something into console.
+ * @param {Object} object - Message string or options object
+ * @param {String} object.message - Message for log
+ * @param {String} object.name - Name of "title" above the message
+ * @param {String} object.showTime - Show time in log object
+ * @param {String} object.innerSpace - Place empty lines inside the log object
+ * @param {String} object.betweenSpace - Place empty lines between the log object (Only grouped log)
+ * @param {String} object.outerSpace - Place empty lines outside the log object
+ * @param {String} object.baseColor - Use a chalk function to send the color of log object. Example: chalk.green
+ * @param {String} object.borderChar - Set a character for the log object border
+ * @param {String} object.borderCharLength - Set a length for the border (-1 for automatic detection)
+ * @param {String} object.filesPath - Set a path for the file logs. Null to disable
+ * 
+ * @param {String} name - Name of "title" above the message
+ * @param {Boolean} showTime - Show time in log object
+ * @param {Boolean} innerSpace - Place empty lines inside the log object
+ * @param {Boolean} betweenSpace - Place empty lines between the log object (Only grouped log)
+ * @param {Boolean} outerSpace - Place empty lines outside the log object
+ * @param {Function} baseColor - Use a chalk function to send the color of log object. Example: chalk.green
+ * @param {String} borderChar - Set a character for the log object border
+ * @param {Number} borderCharLength - Set a length for the border (-1 for automatic detection)
+ * @param {String} filesPath - Set a path for the file logs. Null to disable
+ */
+function log(object, name = null, showTime = null, innerSpace = null, betweenSpace = null, outerSpace = null, baseColor = null, borderChar = null, borderCharLength = null, filesPath = null, dynamic = null) {
+    if(Array.isArray(object)) {
+        groupedLog(object, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+        return;
+    }
+
+    if(typeof object == "string") {
+       logByParams(object, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+       return;
+    }
+    if(typeof object == "object") {
+        logByOptions({
+            message: object.message,
+            name: object.name,
+            showTime: object.showTime,
+            innerSpace: object.innerSpace,
+            betweenSpace: object.betweenSpace,
+            outerSpace: object.outerSpace,
+            baseColor: object.baseColor,
+            borderChar: object.borderChar,
+            borderCharLength: object.borderCharLength,
+            filesPath: object.filesPath,
+            dynamic: object.dynamic
+        });
+        return;
+    }
+}
+
+//internal
+function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _borderChar, _borderCharLength, _filesPath, _dynamic) {
+    let message = _message || standards.message || "No Message";
+    let name = _name || standards.name || null;
+    let showTime = _showTime || standards.showTime || false;
+    let innerSpace = _innerSpace || standards.innerSpace || false;
+    let outerSpace = _outerSpace || standards.outerSpace || false;
+    let baseColor = _baseColor || standards.baseColor || null;
+    let borderChar = _borderChar || standards.borderChar || "-";
+    let borderCharLength = _borderCharLength || standards.borderCharLength || 10;
+    let filesPath = _filesPath || standards.filesPath || null;
+    let dynamic = _dynamic || standards.dynamic || null;
 
     let time = utl.getTime();
 
@@ -77,6 +136,15 @@ function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
 
     /*###################################*/
 
+    if(dynamic instanceof State) {
+        utl.clearLines(dynamic.objects.length+1);
+        output += "\n".repeat(dynamic.objects.length);
+    }
+    if(dynamic instanceof Progress) {
+        utl.clearLines(dynamic.objects.length+1);
+        output += "\n".repeat(dynamic.objects.length);
+    }
+
     if(baseColor) {
         console.log(baseColor(output));
     } else {
@@ -84,12 +152,21 @@ function log(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     }
 }
 
-function miniLog(message = "No message", showTime = false, separator = "=", baseColor = null) {
+function miniLog(message = "No message", showTime = false, separator = "=", baseColor = null, dynamic = null) {
     let output = "";
     let time = utl.getTime();
 
     if(showTime) output = "" + time + " " + separator + " ";
     output += message;
+
+    if(dynamic instanceof State) {
+        utl.clearLines(dynamic.objects.length+1);
+        output += "\n".repeat(dynamic.objects.length);
+    }
+    if(dynamic instanceof Progress) {
+        utl.clearLines(dynamic.objects.length+1);
+        output += "\n".repeat(dynamic.objects.length);
+    }
 
     if(baseColor) {
         console.log(baseColor(output));
@@ -108,9 +185,25 @@ function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = fa
         if(i < messagesArray.length-1 && betweenSpace) output += "\n";
         i++;
     })
-    log(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+    LOG(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
 }
 
+function logByParams(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
+    if(!Array.isArray(message)) {
+        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+    } else {
+        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+    }
+}
+
+/**
+ * @description
+ * Compliment someone on their something.
+ *
+ * @param {Object} options
+ * @param {String} options.name    A person's name
+ * @param {String} options.feature A person's property
+ */
 function logByOptions(options) {
     let message = options.message;
     let name = options.name;
@@ -122,17 +215,17 @@ function logByOptions(options) {
     let borderChar = options.borderChar;
     let borderCharLength = options.borderCharLength;
     let filesPath = options.filesPath;
+    let dynamic = options.dynamic;
 
     if(!Array.isArray(message)) {
-        log(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
     } else {
-        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
     }
-
 }
 
 function setStandards(obj){
-    standarts = obj;
+    standards = obj;
 }
 
 module.exports = {
@@ -140,6 +233,7 @@ module.exports = {
     log: log,
     groupedLog: groupedLog,
     logByOptions: logByOptions,
+    logByParams: logByParams,
     setStandards: setStandards,
     miniLog: miniLog,
     State: State,

@@ -1,3 +1,5 @@
+const utl = require("./utils.js");
+
 module.exports = class State {
     template = "%NAME% > %STATE%";
     objects = [];
@@ -11,15 +13,6 @@ module.exports = class State {
     go() {
         let first = true;
         this.interval = setInterval(() => {
-            const clearLines = (n) => {
-                for (let i = 0; i < n; i++) {
-                    const y = i === 0 ? null : -1;
-                    process.stdout.moveCursor(0, y);
-                    process.stdout.clearLine(1);
-                }
-                process.stdout.cursorTo(0)
-            }
-
             let str = "\u001B[?25l";
 
             let i = 0;
@@ -30,7 +23,7 @@ module.exports = class State {
             });
 
             process.stdout.cursorTo(0);
-            if(!first) clearLines(this.objects.length+1); //execute after second iteration because it clears the "before" stuff
+            if(!first) utl.clearLines(this.objects.length+1); //execute after second iteration because it clears the "before" stuff
             process.stdout.write(str);
             first = false;
         }, 10);
