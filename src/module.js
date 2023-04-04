@@ -28,6 +28,7 @@ function simpleLog(string) {
  * @param {String} object.borderChar - Set a character for the log object border
  * @param {String} object.borderCharLength - Set a length for the border (-1 for automatic detection)
  * @param {String} object.filesPath - Set a path for the file logs. Null to disable
+ * @param {Class} object.dynamic - Put Progress or State class in there and the log will appear inside the progress or state
  * 
  * @param {String} name - Name of "title" above the message
  * @param {Boolean} showTime - Show time in log object
@@ -38,6 +39,7 @@ function simpleLog(string) {
  * @param {String} borderChar - Set a character for the log object border
  * @param {Number} borderCharLength - Set a length for the border (-1 for automatic detection)
  * @param {String} filesPath - Set a path for the file logs. Null to disable
+ * @param {Class} dynamic - Put Progress or State class in there and the log will appear inside the progress or state
  */
 function log(object, name = null, showTime = null, innerSpace = null, betweenSpace = null, outerSpace = null, baseColor = null, borderChar = null, borderCharLength = null, filesPath = null, dynamic = null) {
     if(Array.isArray(object)) {
@@ -152,7 +154,13 @@ function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     }
 }
 
-function miniLog(message = "No message", showTime = false, separator = "=", baseColor = null, dynamic = null) {
+function MINILOG(_message, _showTime, _separator, _baseColor, _dynamic) {
+    let message = _message || "No Message";
+    let showTime = _showTime || false;
+    let separator = _separator || ">";
+    let baseColor = _baseColor || null;
+    let dynamic = _dynamic || null;
+
     let output = "";
     let time = utl.getTime();
 
@@ -173,6 +181,52 @@ function miniLog(message = "No message", showTime = false, separator = "=", base
     } else {
         console.log(output);
     }
+}
+
+function miniLogByParams(message, showTime, separator, baseColor, dynamic) {
+    MINILOG(message, showTime, separator, baseColor, dynamic);
+}
+
+function miniLogByOptions(options) {
+    let message = options.message;
+    let showTime = options.showTime;
+    let separator = options.separator;
+    let baseColor = options.baseColor;
+    let dynamic = options.dynamic;
+
+    MINILOG(message, showTime, separator, baseColor, dynamic);
+}
+
+/**
+ * Log something into console.
+ * @param {Object} object - Message string or options object
+ * @param {String} object.message - Message for log
+ * @param {String} object.showTime - Show time in log object
+ * @param {String} object.separator - Separator between time and message
+ * @param {String} object.baseColor - Use a chalk function to send the color of log object. Example: chalk.green
+ * @param {Class} object.dynamic - Put Progress or State class in there and the log will appear inside the progress or state
+ * 
+ * @param {String} message - Message for log
+ * @param {String} showTime - Show time in log object
+ * @param {String} separator - Separator between time and message
+ * @param {String} baseColor - Use a chalk function to send the color of log object. Example: chalk.green
+ * @param {Class} dynamic - Put Progress or State class in there and the log will appear inside the progress or state
+ */
+function miniLog(object, showTime = null, separator = null, baseColor = null, dynamic = null) {
+    if(typeof object == "string") {
+        miniLogByParams(object, showTime, separator, baseColor, dynamic);
+        return;
+     }
+     if(typeof object == "object") {
+         miniLogByOptions({
+            message: object.message,
+            showTime: object.showTime,
+            separator: object.separator,
+            baseColor: object.baseColor,
+            dynamic: object.dynamic
+         });
+         return;
+     }
 }
 
 function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = false, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
@@ -196,14 +250,6 @@ function logByParams(message, name, showTime, innerSpace, betweenSpace, outerSpa
     }
 }
 
-/**
- * @description
- * Compliment someone on their something.
- *
- * @param {Object} options
- * @param {String} options.name    A person's name
- * @param {String} options.feature A person's property
- */
 function logByOptions(options) {
     let message = options.message;
     let name = options.name;
@@ -230,12 +276,17 @@ function setStandards(obj){
 
 module.exports = {
     simpleLog: simpleLog,
+    setStandards: setStandards,
+
     log: log,
     groupedLog: groupedLog,
-    logByOptions: logByOptions,
     logByParams: logByParams,
-    setStandards: setStandards,
+    logByOptions: logByOptions,
+
     miniLog: miniLog,
+    miniLogByParams: miniLogByParams,
+    miniLogByOptions: miniLogByOptions,
+    
     State: State,
     Progress: Progress
 }
