@@ -132,7 +132,7 @@ function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
 
             let space = (prefix.length - line.replace(utl.ansiRegex(), "").length > 0) ? prefix.length - line.replace(utl.ansiRegex(), "").length + 1 : 0; //add ansiRegex because if the message is underlined there are invisible chars which affects the count
 
-            if(innerSpace) space += (prefix.length - line.length > 0 ? 1 : 0); //add innerspace to lines who DONT touch the border
+            if(innerSpace) space += (prefix.length - line.replace(utl.ansiRegex(), "").length > 0 ? 1 : 0); //add innerspace to lines who DONT touch the border
             if(innerSpace) space += 1; //add one seperater char
 
             return line + (" ".repeat(space)) + borderChar;
