@@ -119,12 +119,18 @@ function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     if(outerSpace) output += "\n";
 
     if(box) {
-        output = output.split("\n").map(line => {
+        output = output.split("\n").map((line, i) => {
+            if(outerSpace && i == 0) return line; //ignore first line if is outerspace
+            if(outerSpace && i == output.split("\n").length - 1) return line; //ignore last line if is outerspace
+
             return borderChar + (innerSpace ? " " : "") + line;
         }).join('\n'); //add char at start
         
-        output = output.split("\n").map(line => {
-            let space = (prefix.length - line.length > 0) ? prefix.length - line.length + 1 : 0;
+        output = output.split("\n").map((line, i) => {
+            if(outerSpace && i == 0) return line; //ignore first line if is outerspace
+            if(outerSpace && i == output.split("\n").length - 1) return line; //ignore last line if is outerspace
+
+            let space = (prefix.length - line.replace(utl.ansiRegex(), "").length > 0) ? prefix.length - line.replace(utl.ansiRegex(), "").length + 1 : 0; //add ansiRegex because if the message is underlined there are invisible chars which affects the count
 
             if(innerSpace) space += (prefix.length - line.length > 0 ? 1 : 0); //add innerspace to lines who DONT touch the border
             if(innerSpace) space += 1; //add one seperater char
@@ -135,13 +141,10 @@ function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
         //fix the empty edges if the log is a box
         if(output.split("\n").length > 2 && innerSpace) {
             output = output.split("\n");
-            output[0] = utl.replaceFirstAndLastChar(output[0], " ", borderChar); //replace first line - prefix
-            output[output.length - 1] = utl.replaceFirstAndLastChar(output[output.length - 1], " ", borderChar); //replace last line - suffix
+            output[outerSpace ? 1 : 0] = utl.replaceFirstAndLastChar(output[outerSpace ? 1 : 0], " ", borderChar); //replace first line - prefix > START LATER IF OUTERSPACE
+            output[output.length - (outerSpace ? 2 : 1)] = utl.replaceFirstAndLastChar(output[output.length - (outerSpace ? 2 : 1)], " ", borderChar); //replace last line - suffix > START LATER IF OUTERSPACE
             output = output.join("\n");
         }
-
-        console.log(utl.replaceFirstAndLastChar("hello world", "*", "l"))
-        
     }
 
     /*########### FILE SYSTEM ###########*/

@@ -99,6 +99,7 @@ module.exports = {
         if (str.length < 2) {
           return str;
         }
+
         let split = str.split("");
         split[split.indexOf(charToReplace)] = replacementChar;
         split[split.lastIndexOf(charToReplace)] = replacementChar;
