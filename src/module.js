@@ -5,7 +5,7 @@ const State = require("./State.class.js");
 const Progress = require("./Progress.class.js");
 const { type } = require("os");
 
-let standards = {};
+let defaults = {};
 
 /**
  * Simple log.
@@ -20,14 +20,15 @@ function simpleLog(string) {
  * @param {Object} object - Message string or options object
  * @param {String} object.message - Message for log
  * @param {String} object.name - Name of "title" above the message
- * @param {String} object.showTime - Show time in log object
- * @param {String} object.innerSpace - Place empty lines inside the log object
- * @param {String} object.betweenSpace - Place empty lines between the log object (Only grouped log)
- * @param {String} object.outerSpace - Place empty lines outside the log object
- * @param {String} object.baseColor - Use a chalk function to send the color of log object. Example: chalk.green
+ * @param {Boolean} object.showTime - Show time in log object
+ * @param {Boolean} object.innerSpace - Place empty lines inside the log object
+ * @param {Boolean} object.betweenSpace - Place empty lines between the log object (Only grouped log)
+ * @param {Boolean} object.outerSpace - Place empty lines outside the log object
+ * @param {Function} object.baseColor - Use a chalk function to send the color of log object. Example: chalk.green
  * @param {String} object.borderChar - Set a character for the log object border
- * @param {String} object.borderCharLength - Set a length for the border (-1 for automatic detection)
+ * @param {Number} object.borderCharLength - Set a length for the border (-1 for automatic detection)
  * @param {String} object.filesPath - Set a path for the file logs. Null to disable
+ * @param {String} object.box - Send the log in a box of borderChars
  * @param {Class} object.dynamic - Put Progress or State class in there and the log will appear inside the progress or state
  * 
  * @param {String} name - Name of "title" above the message
@@ -39,16 +40,17 @@ function simpleLog(string) {
  * @param {String} borderChar - Set a character for the log object border
  * @param {Number} borderCharLength - Set a length for the border (-1 for automatic detection)
  * @param {String} filesPath - Set a path for the file logs. Null to disable
+ * @param {String} box - Send the log in a box of borderChars
  * @param {Class} dynamic - Put Progress or State class in there and the log will appear inside the progress or state
  */
-function log(object, name = null, showTime = null, innerSpace = null, betweenSpace = null, outerSpace = null, baseColor = null, borderChar = null, borderCharLength = null, filesPath = null, dynamic = null) {
+function log(object, name = null, showTime = null, innerSpace = null, betweenSpace = null, outerSpace = null, baseColor = null, borderChar = null, borderCharLength = null, filesPath = null, box = false, dynamic = null) {
     if(Array.isArray(object)) {
-        groupedLog(object, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+        groupedLog(object, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
         return;
     }
 
     if(typeof object == "string") {
-       logByParams(object, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+       logByParams(object, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
        return;
     }
     if(typeof object == "object") {
@@ -63,6 +65,7 @@ function log(object, name = null, showTime = null, innerSpace = null, betweenSpa
             borderChar: object.borderChar,
             borderCharLength: object.borderCharLength,
             filesPath: object.filesPath,
+            box: object.box,
             dynamic: object.dynamic
         });
         return;
@@ -70,25 +73,27 @@ function log(object, name = null, showTime = null, innerSpace = null, betweenSpa
 }
 
 //internal
-function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _borderChar, _borderCharLength, _filesPath, _dynamic) {
-    let message = _message || standards.message || "No Message";
-    let name = _name || standards.name || null;
-    let showTime = _showTime || standards.showTime || false;
-    let innerSpace = _innerSpace || standards.innerSpace || false;
-    let outerSpace = _outerSpace || standards.outerSpace || false;
-    let baseColor = _baseColor || standards.baseColor || null;
-    let borderChar = _borderChar || standards.borderChar || "-";
-    let borderCharLength = _borderCharLength || standards.borderCharLength || 10;
-    let filesPath = _filesPath || standards.filesPath || null;
-    let dynamic = _dynamic || standards.dynamic || null;
+function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _borderChar, _borderCharLength, _filesPath, _box, _dynamic) {
+    let message = _message || defaults.message || "No Message";
+    let name = _name || defaults.name || null;
+    let showTime = _showTime || defaults.showTime || false;
+    let innerSpace = _innerSpace || defaults.innerSpace || false;
+    let outerSpace = _outerSpace || defaults.outerSpace || false;
+    let baseColor = _baseColor || defaults.baseColor || null;
+    let borderChar = _borderChar || defaults.borderChar || "-";
+    let borderCharLength = _borderCharLength || defaults.borderCharLength || 10;
+    let filesPath = _filesPath || defaults.filesPath || null;
+    let box = _box || defaults.box || false;
+    let dynamic = _dynamic || defaults.dynamic || null;
 
     let time = utl.getTime();
 
     let longestContentStr = message.replace(utl.ansiRegex(), "");
     if(showTime) longestContentStr += "\nTime: " + time;
+    let longestLine = utl.calculateLongestLine(longestContentStr);
 
     let nameLength = (name != null) ? (4 + name?.length || 0) : (name?.length || 0);
-    if(borderCharLength == -1) borderCharLength = ((utl.calculateLongestLine(longestContentStr)-(nameLength || 0))/2);
+    if(borderCharLength == -1) borderCharLength = ((longestLine-(nameLength || 0))/2);
     if(borderCharLength <= 0) borderCharLength = 1;
     borderCharLength = Math.ceil(borderCharLength);
 
@@ -112,6 +117,32 @@ function LOG(_message, _name, _showTime, _innerSpace, _outerSpace, _baseColor, _
     if(innerSpace) output += "\n";
     output += suffix;
     if(outerSpace) output += "\n";
+
+    if(box) {
+        output = output.split("\n").map(line => {
+            return borderChar + (innerSpace ? " " : "") + line;
+        }).join('\n'); //add char at start
+        
+        output = output.split("\n").map(line => {
+            let space = (prefix.length - line.length > 0) ? prefix.length - line.length + 1 : 0;
+
+            if(innerSpace) space += (prefix.length - line.length > 0 ? 1 : 0); //add innerspace to lines who DONT touch the border
+            if(innerSpace) space += 1; //add one seperater char
+
+            return line + (" ".repeat(space)) + borderChar;
+        }).join('\n'); //add char at end
+
+        //fix the empty edges if the log is a box
+        if(output.split("\n").length > 2 && innerSpace) {
+            output = output.split("\n");
+            output[0] = utl.replaceFirstAndLastChar(output[0], " ", borderChar); //replace first line - prefix
+            output[output.length - 1] = utl.replaceFirstAndLastChar(output[output.length - 1], " ", borderChar); //replace last line - suffix
+            output = output.join("\n");
+        }
+
+        console.log(utl.replaceFirstAndLastChar("hello world", "*", "l"))
+        
+    }
 
     /*########### FILE SYSTEM ###########*/
 
@@ -229,7 +260,7 @@ function miniLog(object, showTime = null, separator = null, baseColor = null, dy
      }
 }
 
-function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = false, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
+function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = false, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic) {
     if(messagesArray.length < 1) return;
     let output = "";
     let i = 0;
@@ -239,14 +270,14 @@ function groupedLog(messagesArray, name, showTime, innerSpace, betweenSpace = fa
         if(i < messagesArray.length-1 && betweenSpace) output += "\n";
         i++;
     })
-    LOG(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+    LOG(output, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
 }
 
-function logByParams(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath) {
+function logByParams(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic) {
     if(!Array.isArray(message)) {
-        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
     } else {
-        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath);
+        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
     }
 }
 
@@ -261,22 +292,23 @@ function logByOptions(options) {
     let borderChar = options.borderChar;
     let borderCharLength = options.borderCharLength;
     let filesPath = options.filesPath;
+    let box = options.box;
     let dynamic = options.dynamic;
 
     if(!Array.isArray(message)) {
-        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+        LOG(message, name, showTime, innerSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
     } else {
-        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, dynamic);
+        groupedLog(message, name, showTime, innerSpace, betweenSpace, outerSpace, baseColor, borderChar, borderCharLength, filesPath, box, dynamic);
     }
 }
 
-function setStandards(obj){
-    standards = obj;
+function setDefaults(obj){
+    defaults = obj;
 }
 
 module.exports = {
     simpleLog: simpleLog,
-    setStandards: setStandards,
+    setDefaults: setDefaults,
 
     log: log,
     groupedLog: groupedLog,

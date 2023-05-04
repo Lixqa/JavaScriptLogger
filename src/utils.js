@@ -94,5 +94,15 @@ module.exports = {
             process.stdout.clearLine(1);
         }
         process.stdout.cursorTo(0)
-    }
+    },
+    replaceFirstAndLastChar(str, charToReplace, replacementChar) {
+        if (str.length < 2) {
+          return str;
+        }
+        let split = str.split("");
+        split[split.indexOf(charToReplace)] = replacementChar;
+        split[split.lastIndexOf(charToReplace)] = replacementChar;
+
+        return split.join("");
+    },
 }
